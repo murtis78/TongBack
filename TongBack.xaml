@@ -1,0 +1,84 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
+        Title="TongBack - Hashcat GUI" Height="750" Width="800">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header Section -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+            <Image Source="Docs/TongBack.png" Width="80" Height="80" Margin="10"/>
+            <TextBlock Text="TongBack - Hashcat GUI" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Input Section -->
+        <StackPanel Grid.Row="1" Margin="10">
+            <GroupBox Header="Paramètres d'attaque" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <TextBlock Text="Mode d'attaque:" FontWeight="Bold"/>
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox Name="modeComboBox" SelectedIndex="0" Width="300">
+                            <ComboBoxItem Content="0 - Attaque par dictionnaire"/>
+                            <ComboBoxItem Content="1 - Attaque par combinaison (Wordlist + Wordlist)"/>
+                            <ComboBoxItem Content="3 - Attaque par dictionnaire avec masque (Wordlist + Masque)"/>
+                            <ComboBoxItem Content="6 - Attaque hybride (Wordlist + Masque)"/>
+                            <ComboBoxItem Content="7 - Attaque hybride (Masque + Wordlist)"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <TextBlock Text="Format de hash:" FontWeight="Bold" Margin="0,10,0,0"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Name="hashModeTextBox" Width="300"/>
+                        <Button Content="Parcourir" Name="BrowseHashModeButton" Width="80" Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Hash:" FontWeight="Bold" Margin="0,10,0,0"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Name="hashTextBox" Width="300"/>
+                        <Button Content="Parcourir" Name="BrowseHashButton" Width="80" Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Fichier de hash:" FontWeight="Bold" Margin="0,10,0,0"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Name="fileTextBox" Width="300"/>
+                        <Button Content="Parcourir" Name="BrowseFileButton" Width="80" Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Liste de mots:" FontWeight="Bold" Margin="0,10,0,0"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Name="wordlistTextBox" Width="300"/>
+                        <Button Content="Parcourir" Name="BrowseWordlistButton" Width="80" Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Masque:" FontWeight="Bold" Margin="0,10,0,0"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Name="maskTextBox" Width="300"/>
+                        <Button Content="Parcourir" Name="BrowseMaskButton" Width="80" Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <Button Content="Démarrer l'attaque" Name="StartAttackButton" Margin="10,10,0,0" Width="150" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="Recherche de format de hash" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <TextBlock Text="Recherche:" FontWeight="Bold"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Name="searchTextBox" Width="300"/>
+                        <Button Content="Rechercher" Name="SearchButton" Width="100" Margin="10,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+
+        <!-- Terminal Section -->
+        <GroupBox Grid.Row="2" Header="Terminal PowerShell" Margin="10,0,10,10">
+            <wfi:WindowsFormsHost Name="powershellHost" Height="300" Margin="10"/>
+        </GroupBox>
+    </Grid>
+</Window>
