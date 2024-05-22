@@ -55,12 +55,12 @@ Ce script PowerShell simplifie l'utilisation de l'outil Hashcat en fournissant d
 ## Exemples
 
 ```powershell
-.\TongBack.ps1 -mode 1 -hash "votre_hash_ici" -wordlist "liste1.txt" "liste2.txt"
+.\TongBack.ps1 -mode 0 -hash "votre_hash_ici" -wordlist "liste1.txt"
 ```
 Cet exemple exécute une attaque de craquage de mot de passe en mode 1 en utilisant le hash spécifié et deux listes de mots.
 
 ```powershell
-.\TongBack.ps1 -mode 1 -file "chemin\vers\hashes.txt" -wordlist "liste1.txt" "liste2.txt"
+.\TongBack.ps1 -mode 0 -file "chemin\vers\hashes.txt" -wordlist "liste1.txt"
 ```
 Cet exemple exécute une attaque de craquage de mot de passe en mode 1 en utilisant le hash extrait du fichier spécifié et deux listes de mots.
 
