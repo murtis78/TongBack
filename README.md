@@ -4,6 +4,7 @@
 Il faut créer un dossier `Tools/` dans lequel il faudra dézipper les fichiers qui se trouvent dans `Requirements/` :
   - **john-1.9.0-jumbo-1-win64.zip**
   - **hashcat-6.2.6.7z**
+
 Il faut également installer Python, et on peut utiliser une Wordlist contenue dans `SecLists-master.zip`.
 
 ## Synopsis
