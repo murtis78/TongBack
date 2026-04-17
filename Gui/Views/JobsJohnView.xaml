@@ -1,0 +1,189 @@
+<UserControl
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="#0d1117">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="340"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Panneau gauche : parametres John -->
+        <Border Grid.Column="0" Background="#161b22"
+                BorderBrush="#30363d" BorderThickness="0,0,1,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="20,20,20,20">
+                    <TextBlock Text="Job John the Ripper" FontSize="18" FontWeight="SemiBold"
+                               Foreground="#e6edf3" Margin="0,0,0,20"/>
+
+                    <!-- Source du hash -->
+                    <TextBlock Text="Source" Foreground="#8b949e" FontSize="11" Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                        <RadioButton x:Name="rbJohnDirectHash" Content="Hash direct"
+                                     Foreground="#e6edf3" IsChecked="True" Margin="0,0,16,0"/>
+                        <RadioButton x:Name="rbJohnFromFile" Content="Depuis fichier"
+                                     Foreground="#e6edf3"/>
+                    </StackPanel>
+
+                    <!-- Hash direct -->
+                    <Border x:Name="pnlJohnHash" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="Hash" Foreground="#8b949e" FontSize="11" Margin="0,0,0,4"/>
+                            <Border Background="#21262d" BorderBrush="#30363d" BorderThickness="1" CornerRadius="6">
+                                <TextBox x:Name="tbJohnHash" Background="Transparent"
+                                         Foreground="#e6edf3" CaretBrush="#58a6ff"
+                                         BorderThickness="0" Padding="10,7"
+                                         FontFamily="Consolas" FontSize="12"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Depuis fichier -->
+                    <Border x:Name="pnlJohnFile" Visibility="Collapsed" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="Fichier" Foreground="#8b949e" FontSize="11" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="#21262d" BorderBrush="#30363d"
+                                        BorderThickness="1" CornerRadius="6,0,0,6">
+                                    <TextBox x:Name="tbJohnFile" Background="Transparent"
+                                             Foreground="#e6edf3" CaretBrush="#58a6ff"
+                                             BorderThickness="0" Padding="10,7"/>
+                                </Border>
+                                <Button x:Name="btnJohnBrowseFile" Grid.Column="1" Content="..."
+                                        Background="#30363d" Foreground="#e6edf3"
+                                        BorderBrush="#30363d" BorderThickness="1"
+                                        Padding="10,7" Cursor="Hand">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                                    CornerRadius="0,6,6,0" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="bd" Property="Background" Value="#58a6ff"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Wordlist -->
+                    <TextBlock Text="Wordlist (optionnel)" Foreground="#8b949e" FontSize="11" Margin="0,0,0,4"/>
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#21262d" BorderBrush="#30363d"
+                                BorderThickness="1" CornerRadius="6,0,0,6">
+                            <TextBox x:Name="tbJohnWordlist" Background="Transparent"
+                                     Foreground="#e6edf3" CaretBrush="#58a6ff"
+                                     BorderThickness="0" Padding="10,7"/>
+                        </Border>
+                        <Button x:Name="btnJohnBrowseWl" Grid.Column="1" Content="..."
+                                Background="#30363d" Foreground="#e6edf3"
+                                BorderBrush="#30363d" BorderThickness="1"
+                                Padding="10,7" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                            CornerRadius="0,6,6,0" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="#58a6ff"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+
+                    <!-- Arguments supplementaires -->
+                    <TextBlock Text="Arguments supplementaires" Foreground="#8b949e" FontSize="11" Margin="0,0,0,4"/>
+                    <Border Background="#21262d" BorderBrush="#30363d" BorderThickness="1"
+                            CornerRadius="6" Margin="0,0,0,20">
+                        <TextBox x:Name="tbJohnExtraArgs" Background="Transparent"
+                                 Foreground="#e6edf3" CaretBrush="#58a6ff"
+                                 BorderThickness="0" Padding="10,7"
+                                 FontFamily="Consolas" FontSize="12"/>
+                    </Border>
+
+                    <!-- Boutons -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="btnJohnStart" Grid.Column="0" Content="Lancer"
+                                Background="#238636" Foreground="White"
+                                BorderBrush="#2ea043" BorderThickness="1"
+                                Padding="0,10" Cursor="Hand" Margin="0,0,8,0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                            CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="#2ea043"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button x:Name="btnJohnStop" Grid.Column="1" Content="Arreter"
+                                Background="#21262d" Foreground="#f85149"
+                                BorderBrush="#30363d" BorderThickness="1"
+                                Padding="14,10" Cursor="Hand" IsEnabled="False">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                            CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="#30363d"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Console output -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Background="#161b22" Padding="16,10">
+                <TextBlock Text="Sortie john" Foreground="#8b949e" FontSize="12"/>
+            </Border>
+            <Border Grid.Row="1" Background="#0d1117" Padding="2">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <TextBox x:Name="tbJohnOutput" Background="Transparent"
+                             Foreground="#39d353" CaretBrush="#39d353"
+                             BorderThickness="0" Padding="16"
+                             FontFamily="Consolas" FontSize="12"
+                             IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"/>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

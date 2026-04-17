@@ -1,0 +1,21 @@
+{
+  "Tools": {
+    "hashcat": [
+      {
+        "Version": "7.1.2",
+        "Url": "https://github.com/hashcat/hashcat/releases/download/v7.1.2/hashcat-7.1.2.7z",
+        "ArchiveType": "7z",
+        "ExeRelPath": "hashcat-7.1.2\\hashcat.exe",
+        "Sha256": "80db0316387794ce9d14ed376da75b8a7742972485b45db790f5f8260307ff98"
+      }
+    ],
+    "john": [
+      {
+        "Version": "1.9.1-ce-winX64",
+        "Url": "https://github.com/openwall/john-packages/releases/download/v1.9.1-ce/winX64_1_JtR.7z",
+        "ArchiveType": "7z",
+        "ExeRelPath": "John_the_Ripper_v1.9.1\\run\\john.exe"
+      }
+    ]
+  }
+}

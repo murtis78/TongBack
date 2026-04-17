@@ -1,0 +1,73 @@
+# TongBack - fichiers locaux, runtime et binaires
+
+# Configuration locale propre a la machine
+Config/appsettings.local.json
+
+# Outils tiers telecharges/extraits
+Tools/*
+!Tools/.gitkeep
+
+# Archives fournies manuellement ou telechargees
+Requirements/*
+!Requirements/.gitkeep
+*.7z
+*.zip
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+
+# Donnees runtime generees par TongBack
+Logs/*
+!Logs/.gitkeep
+Sessions/*
+!Sessions/.gitkeep
+Results/*
+!Results/.gitkeep
+Temp/*
+!Temp/.gitkeep
+Data/capabilities/*
+!Data/capabilities/.gitkeep
+
+# Sorties Hashcat / John
+*.potfile
+*.restore
+*.hash
+*.hcstat2
+*.dictstat2
+hashcat.log
+show.log
+*.log
+
+# Wordlists et corpus de test locaux
+Wordlists/
+wordlists/
+SecLists/
+rockyou.txt
+Documents/
+
+# Fichiers bureautiques / documents personnels
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.odt
+*.ods
+*.odp
+
+# Caches et environnements
+.vs/
+.vscode/
+*.ps1xml
+__pycache__/
+*.pyc
+.pytest_cache/
+Tests/TestResults/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store

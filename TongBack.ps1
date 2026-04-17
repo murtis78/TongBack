@@ -1,250 +1,201 @@
-<#
+﻿<#
 .SYNOPSIS
-Hashcat script pour faciliter l'utilisation de l'outil Hashcat.
+    TongBack v2.0 — Wrapper CLI pour Hashcat et John the Ripper.
 
 .DESCRIPTION
-Ce script PowerShell simplifie l'utilisation de l'outil Hashcat en fournissant des fonctions pour rechercher des formats de hash, extraire des hashes à partir de fichiers et exécuter des attaques de craquage de mots de passe. Le script prend en charge différents modes d'attaque, l'utilisation de listes de mots et les attaques par force brute.
+    Simplifie l'utilisation de Hashcat en proposant :
+      - La recherche de formats de hash (-Search)
+      - L'extraction automatique de hash depuis un fichier (-File)
+      - Le lancement d'attaques par dictionnaire, combinaison, masque ou hybride (-Mode)
+      - L'ouverture de l'interface graphique WPF (-GUI)
 
-.PARAMETER help
-Affiche l'aide pour le script.
+    Ce script est le point d'entrée en ligne de commande. Toute la logique
+    métier est dans le module TongBack.psm1.
 
-.PARAMETER search
-Effectue une recherche de format de hash à l'aide de la chaîne de recherche spécifiée.
+.PARAMETER Help
+    Affiche cette aide.
 
-.PARAMETER wordlist
-Spécifie une ou deux listes de mots pour l'attaque.
+.PARAMETER GUI
+    Lance l'interface graphique WPF (TongBack-GUI.ps1).
 
-.PARAMETER file
-Spécifie le fichier contenant le hash ou à partir duquel extraire le hash.
+.PARAMETER Search
+    Recherche un format de hash dans les bases Hashcat et John.
+    Accepte une expression régulière. Ex : -Search 'pdf'
 
-.PARAMETER hash
-Spécifie le hash directement.
+.PARAMETER Mode
+    Mode d'attaque Hashcat :
+        0 = Dictionnaire         (requiert -Wordlist)
+        1 = Combinaison          (requiert -Wordlist x2)
+        3 = Brute-force masque   (requiert -Mask)
+        6 = Hybride Wordlist+Masque
+        7 = Hybride Masque+Wordlist
 
-.PARAMETER hashmode
-Spécifie le format de hash à craquer.
+.PARAMETER HashMode
+    Identifiant du format Hashcat (ex: 1000 = NTLM, 10400 = PDF 1.1-1.3).
+    Utilisez -Search pour le trouver.
 
-.PARAMETER mask
-Spécifie le jeu de caractères pour une attaque par force brute.
-    ?l = abcdefghijklmnopqrstuvwxyz
-    ?u = ABCDEFGHIJKLMNOPQRSTUVWXYZ
-    ?d = 0123456789
-    ?h = 0123456789abcdef
-    ?H = 0123456789ABCDEF
-    ?s = «space»!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
-    ?a = ?l?u?d?s
-    ?b = 0x00 - 0xff
+.PARAMETER Hash
+    Hash à craquer, fourni directement en chaîne.
 
-.PARAMETER mode
-Spécifie le mode d'attaque (0, 1, 3, 6, 7).
-    0 = Attaque par dictionnaire, 
-    1 = Attaque par combinaison (Wordlist + Wordlist), 
-    3 = Attaque par dictionnaire avec masque (Wordlist + Masque), 
-    6 = Attaque hybride (Wordlist + Masque), 
-    7 = Attaque hybride (Masque + Wordlist).
+.PARAMETER File
+    Fichier protégé dont le hash sera extrait automatiquement.
+    Formats supportés : .pdf, .zip, .rar, .docx, .kdbx, .pfx, etc.
+
+.PARAMETER Wordlist
+    Chemin(s) vers les fichiers de mots de passe. Un ou deux chemins selon le mode.
+
+.PARAMETER Mask
+    Masque de brute-force. Caractères spéciaux :
+        ?l = minuscules   ?u = majuscules   ?d = chiffres
+        ?s = spéciaux     ?a = tout         ?b = 0x00-0xff
+
+.PARAMETER ExtraArgs
+    Arguments supplémentaires passés directement à hashcat.exe.
+
+.PARAMETER NoShow
+    Ne pas afficher le mot de passe retrouvé avec --show après l'attaque.
 
 .EXAMPLE
-.\TongBack.ps1 -mode 1 -hash "votre_hash_ici" -wordlist "liste1.txt" "liste2.txt"
-
-Cet exemple exécute une attaque de craquage de mot de passe en mode 1 en utilisant le hash spécifié et deux listes de mots.
+    .\TongBack.ps1 -Search 'pdf'
 
 .EXAMPLE
-.\TongBack.ps1 -mode 1 -file "chemin\vers\hashes.txt" -wordlist "liste1.txt" "liste2.txt"
+    .\TongBack.ps1 -Mode 0 -HashMode 10400 -File .\document.pdf -Wordlist .\wordlists\rockyou.txt
 
-Cet exemple exécute une attaque de craquage de mot de passe en mode 1 en utilisant le hash extrait du fichier spécifié et deux listes de mots.
+.EXAMPLE
+    .\TongBack.ps1 -Mode 3 -HashMode 1000 -Hash 'aad3b...' -Mask '?u?l?l?l?d?d?d?d'
+
+.EXAMPLE
+    .\TongBack.ps1 -Mode 1 -HashMode 0 -Hash 'b4b9...' -Wordlist .\wl1.txt .\wl2.txt
+
+.EXAMPLE
+    .\TongBack.ps1 -GUI
 
 .NOTES
-Auteur : Othmane AZIRAR
-Version : 1.0
-
+    Auteur  : Othmane AZIRAR
+    Version : 2.0.0
+    Module  : TongBack.psm1
 #>
+#Requires -Version 5.1
 
+[CmdletBinding(DefaultParameterSetName = 'Attack')]
+param(
+    [Parameter(ParameterSetName = 'Help')]
+    [switch]$Help,
 
-param (
-    [switch]$help,
-    [string]$search,
-    [string[]]$wordlist,
-    [string]$file,
-    [string]$hash,
-    [string]$mask,
-    [int]$mode,
-    [int]$HashMode
+    [Parameter(ParameterSetName = 'GUI')]
+    [switch]$GUI,
+
+    [Parameter(ParameterSetName = 'Search', Mandatory)]
+    [ValidateNotNullOrEmpty()]
+    [string]$Search,
+
+    [Parameter(ParameterSetName = 'Attack')]
+    [ValidateSet(0, 1, 3, 6, 7)]
+    [int]$Mode,
+
+    [Parameter(ParameterSetName = 'Attack')]
+    [ValidateRange(0, 99999)]
+    [int]$HashMode,
+
+    [Parameter(ParameterSetName = 'Attack')]
+    [string]$Hash,
+
+    [Parameter(ParameterSetName = 'Attack')]
+    [ValidateScript({ Test-Path $_ -PathType Leaf })]
+    [string]$File,
+
+    [Parameter(ParameterSetName = 'Attack')]
+    [string[]]$Wordlist,
+
+    [Parameter(ParameterSetName = 'Attack')]
+    [string]$Mask,
+
+    [Parameter(ParameterSetName = 'Attack')]
+    [string[]]$ExtraArgs,
+
+    [Parameter(ParameterSetName = 'Attack')]
+    [switch]$NoShow
 )
 
-function Get-Logo{
-    Clear-Host
-    Write-Output ""
-    Write-Output ""
-    Write-Output "               ▓                                   ▓               "
-    Write-Output "               ▓▓▓                               ▓▓▓               "
-    Write-Output "              ▓▓▓▓▓▓                           ▓▓▓▓▓▓              "
-    Write-Output "              ▓▓▓▓▓▓▓▓                       ▓▓▓▓▓▓▓▓              "
-    Write-Output "             ▓▓▓▓▓▓▓▓▓▓▓                   ▓▓▓▓▓▓▓▓▓▓▓             "
-    Write-Output "             ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓             "
-    Write-Output "            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓            "
-    Write-Output "            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓            "
-    Write-Output "           ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓           "
-    Write-Output "        ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒       "
-    Write-Output "        ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒       "
-    Write-Output "          ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓         "
-    Write-Output "         ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓        "
-    Write-Output "        ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓       "
-    Write-Output "       ▓▓▓▓▓▓▓▓▓▓░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒░░░░▓▓▓▓▓▓▓▓▓▓      "
-    Write-Output "      ▓▓▓▓▓▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓▓▓▓░░░░▓▓▓▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓▓▓▓▓▓     "
-    Write-Output "      ▓▓▓▓▓▓▓▓▓▓▓▓░░░░▓▓▓▓▓▓▓▓░░░░░░░▓▓▓▓▓▓▓▓▓░░░░▓▓▓▓▓▓▓▓▓▓▓▓     "
-    Write-Output "     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    "
-    Write-Output "     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    "
-    Write-Output "     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    "
-    Write-Output "     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    "
-    Write-Output "     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    "
-    Write-Output "     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    "
-    Write-Output "     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    "
-    Write-Output "      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓     "
-    Write-Output "      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓     "
-    Write-Output "       ▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓      "
-    Write-Output "        ▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓       "
-    Write-Output "         ▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓        "
-    Write-Output "          ▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓         "
-    Write-Output "           ▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓          "
-    Write-Output "            ▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓            "
-    Write-Output "              ▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓             "
-    Write-Output "                 ▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓                "
-    Write-Output "                   ▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓                  "
-    Write-Output "                     ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                    "
-    Write-Output "                     ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                    "
-    Write-Output "                      ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                     "
-    Write-Output "                       ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                      "
-    Write-Output "                         ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                       "
-    Write-Output "                           ▒▒▒▒▒▒▒▒▒▒▒▒▒▒                          "
-    Write-Output "                              ▒▒▒▒▒▒▒▒▒▒                           "
-    Write-Output ""
-    Write-Output ""
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+# ── Chargement du module ──────────────────────────────────────────────────────
+$modulePath = Join-Path $PSScriptRoot 'TongBack.psm1'
+if (-not (Test-Path $modulePath)) {
+    Write-Error "Module introuvable : $modulePath"
+    exit 1
+}
+Import-Module $modulePath -Force
+
+# ── Aide ──────────────────────────────────────────────────────────────────────
+if ($PSCmdlet.ParameterSetName -eq 'Help' -or $Help) {
+    Show-TongBackLogo
+    Get-Help $MyInvocation.MyCommand.Path -Detailed
+    exit 0
 }
 
-
-
-function Display-Help {
-@"
-Utilisation : TongBack.ps1 -mode <TypeAttaque> -hash <Hash>|-fichier <CheminFichier> [-search <ChaîneRecherche>] [-wordlist <ListeMots1> [<ListeMots2>]] [-extract] [-mask <JeuxCaractères>]
-
-Options :
-    -help           Afficher ce message d'aide.
-    -search         Effectuer une recherche de format de hash à l'aide de la chaîne de recherche.
-    -wordlist       Spécifier une ou deux listes de mots pour l'attaque.
-    -file           Spécifier le fichier contenant le hash ou à partir duquel extraire le hash.
-    -hash           Spécifier le hash directement.
-    -hashmode       Spécifier le format de hash à craquer (l'option "-search" sert à le trouver)
-    -mask           Spécifier le jeu de caractères pour une attaque par force brute (Exemple : ?l?u?d?h?H?s?a?b).
-    -mode           Spécifier le mode d'attaque :
-                    - 0= Attaque par dictionnaire, 
-                    - 1= Attaque par combinaison (Wordlist + Wordlist), 
-                    - 3= Attaque par dictionnaire avec masque (Wordlist + Masque), 
-                    - 6= Attaque hybride (Wordlist + Masque), 
-                    - 7= Attaque hybride (Masque + Wordlist).
-
-Exemples :
-    .\TongBack.ps1 -mode 1 -hash "votre_hash_ici" -wordlist "liste1.txt" "liste2.txt"
-    .\TongBack.ps1 -mode 1 -fichier "chemin\vers\hashes.txt" -wordlist "liste1.txt" "liste2.txt"
-"@
-    exit
-}
-
-
-
-function Find-Format {
-    param ([string]$search)
-    & "$PSScriptRoot\Find-Format.ps1" -search $search
-}
-
-
-
-function Get-Hash {
-    param (
-        [string]$file,
-        [string]$hash
-    )
-
-    if ($hash) {
-        return $hash
-    } elseif ($file) {
-        $Hash = & "$PSScriptRoot\Get-Hash.ps1" -file $file
-        return $Hash
-    } else {
-        Write-Error "No hash data found or provided."
+# ── GUI ───────────────────────────────────────────────────────────────────────
+if ($PSCmdlet.ParameterSetName -eq 'GUI' -or $GUI) {
+    $guiScript = Join-Path $PSScriptRoot 'TongBack-GUI.ps1'
+    if (-not (Test-Path $guiScript)) {
+        Write-Error "TongBack-GUI.ps1 introuvable."
         exit 1
     }
+    & $guiScript
+    exit 0
 }
 
+# ── Recherche ─────────────────────────────────────────────────────────────────
+if ($PSCmdlet.ParameterSetName -eq 'Search') {
+    Show-TongBackLogo
+    $result = Find-HashFormat -Search $Search
 
-
-function Get-Attack {
-    param (
-        [int]$mode,
-        [string]$Hash,
-        [array]$wordlist,
-        [string]$charset
-    )
-    Begin {
-        Write-Verbose "Starting attack mode $mode"
+    if (-not $result.Hashcat -and -not $result.John) {
+        Write-Host "  Aucun résultat pour '$Search'." -ForegroundColor Red
+        exit 0
     }
-    Process {
-        $hashcatExecutable = ".\hashcat.exe"
-        $baseArgs = @("-m", $HashMode, "-a", $mode, $Hash)
 
-        switch ($mode) {
-            0 { $args = $baseArgs + $wordlist }
-            1 { $args = $baseArgs + @($wordlist[0], $wordlist[1]) }
-            3 { $args = $baseArgs + @("-1", $charset) }
-            6 { $args = $baseArgs + @($wordlist, $charset) }
-            7 { $args = $baseArgs + @($charset, $wordlist) }
-            default {
-                Write-Error "Unsupported attack mode $mode"
-                return
-            }
-        }
-
-        $output = & $hashcatExecutable $args
-        Write-Verbose "Hashcat execution output: $output"
-
-        if ($mode -ne 3) {
-            $showArgs = $args + "--show"
-            $showOutput = & $hashcatExecutable $showArgs
-            Write-Verbose "Hashcat show output: $showOutput"
-        }
+    if ($result.Hashcat) {
+        Write-Host "  Résultats Hashcat (-m) pour '$Search' :" -ForegroundColor Green
+        $result.Hashcat | Format-Table -AutoSize -Property @{L='Mode';E={$_.Mode};W=6}, Name
     }
-    End {
-        Write-Verbose "Completed attack mode $mode"
+
+    if ($result.John) {
+        Write-Host "  Résultats John the Ripper pour '$Search' :" -ForegroundColor Green
+        $result.John | ForEach-Object { Write-Host "    $_" }
+        Write-Host ''
     }
+    exit 0
 }
 
-$VerbosePreference = 'Continue'
+# ── Attaque ───────────────────────────────────────────────────────────────────
+Show-TongBackLogo
 
-
-
-if ($help) {
-    Get-Logo
-    Display-Help
-} elseif ($search) {
-    Get-Logo
-    Find-Format $search
-} elseif (![string]::IsNullOrWhiteSpace($hash)) {  // Check if the $hash parameter is specified
-    $HashData = $hash
-} elseif (![string]::IsNullOrWhiteSpace($file)) {
-    $HashData = Get-Hash $file
-    if (-not $HashData) {
-        Write-Error "No hash data found or provided."
-        exit 1
-    }
-} else {
-    Write-Error "Either file or hash parameter must not be empty."
+# Vérification qu'au moins une source de hash est fournie
+if ([string]::IsNullOrWhiteSpace($Hash) -and [string]::IsNullOrWhiteSpace($File)) {
+    Write-Error "Spécifiez un hash (-Hash) ou un fichier (-File)."
+    Write-Host "  Aide : .\TongBack.ps1 -Help" -ForegroundColor Yellow
     exit 1
 }
 
-if ($HashData) {
-    try {
-        Get-Logo
-        Set-Location -Path "$PSScriptRoot\Tools\hashcat-6.2.6"
-        Get-Attack -mode $mode -hash $HashData -wordlist $wordlist -charset $mask
-    } finally {
-        Set-Location -Path "$PSScriptRoot"
-    }
+$attackParams = @{
+    Mode     = $Mode
+    HashMode = $HashMode
+    NoShow   = $NoShow
+}
+
+if (-not [string]::IsNullOrWhiteSpace($Hash))     { $attackParams['Hash']      = $Hash }
+if (-not [string]::IsNullOrWhiteSpace($File))     { $attackParams['FilePath']  = $File }
+if ($Wordlist -and $Wordlist.Count -gt 0)         { $attackParams['Wordlist']  = $Wordlist }
+if (-not [string]::IsNullOrWhiteSpace($Mask))     { $attackParams['Mask']      = $Mask }
+if ($ExtraArgs -and $ExtraArgs.Count -gt 0)       { $attackParams['ExtraArgs'] = $ExtraArgs }
+
+try {
+    Start-HashcatAttack @attackParams
+}
+catch {
+    Write-Host ''
+    Write-Host "[!] Erreur : $_" -ForegroundColor Red
+    exit 1
 }
